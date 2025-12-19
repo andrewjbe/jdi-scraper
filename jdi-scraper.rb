@@ -147,8 +147,41 @@ class JdiScraper
 end
 
 COUNTIES = {
+  "Atoka" => "atoka",
+  "Blaine" => "blaine",
+  "Caddo" => "caddo",
+  "Canadian" => "canadian",
+  "Carter" => "carter",
+  "Cimarron" => "cimarron",
+  "Cleveland" => "cleveland",
+  "Comanche" => "comanche",
+  "Craig" => "craig",
+  "Creek" => "creek",
+  "Custer" => "custer",
+  "Delaware" => "delaware",
+  "Garfield" => "garfield",
+  "Garvin" => "garvin",
+  "Grady" => "grady",
+  "Latimer" => "latimer",
+  "Lincoln" => "lincoln",
+  "Logan" => "logan",
+  "Love" => "love",
+  "Major" => "major",
+  "Mayes" => "mayes",
+  "McClain" => "mcclain",
   "Oklahoma" => "oklahoma",
-  "Tulsa" => "tulsa"
+  "Okmulgee" => "okmulgee",
+  "Osage" => "osage",
+  "Ottawa" => "ottawa",
+  "Pawnee" => "pawnee",
+  "Payne" => "payne",
+  "Pottawatomie" => "pottawatomie",
+  "Rogers" => "rogers",
+  "Seminole" => "seminole",
+  "Sequoyah" => "sequoyah",
+  "Tulsa" => "tulsa",
+  "Wagoner" => "wagoner",
+  "Washington" => "washington"
 }
 scraper = JdiScraper.new(COUNTIES, "2025-12-01", Date.today.strftime("%Y-%m-%d"))
 scraper.run
