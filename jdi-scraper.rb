@@ -69,7 +69,7 @@ class JdiScraper
 
         # skip if we already have the CSVs
         if Dir.glob(current_download_dir.join("*.csv")).any?
-          puts " --- Skipping #{date_str}: Files already exist."
+          puts " --- Skipping #{display_name} / #{date_str}: Files already exist."
           next
         end
 
@@ -110,6 +110,37 @@ class JdiScraper
     pretty_time = Time.at(scrape_time).utc.strftime("%H hours, %M minutes, %S seconds")
     puts "======================================================\nScrape Completed! Total time: #{pretty_time}\n======================================================"
 
+    print_summary
+  end
+
+  def print_summary
+    puts "\n-------- Summary of scraped files now on disk: --------"
+    header = "%-15s | %-20s | %-12s | %-12s | %-12s" % ["County", "Datasets Available", "Total Dates", "Min Date", "Max Date"]
+    puts header
+    puts "-" * header.length
+
+    @counties.keys.sort.each do |county_name|
+      county_dir = OUTPUT_DIR.join(county_name.downcase)
+      next unless county_dir.exist?
+
+      csv_files = Dir.glob(county_dir.join("**", "*.csv"))
+
+      if csv_files.any?
+        dates = csv_files.map { |f| File.dirname(f).split(File::SEPARATOR).last }.uniq.sort
+        min_date = dates.first
+        max_date = dates.last
+
+        earliest_dir = county_dir.join(min_date)
+        n_csvs_earliest = Dir.glob(earliest_dir.join("*.csv")).count
+
+        total_dates = dates.count
+
+        puts "%-15s | %-20d | %-12d | %-12s | %-12s" % [county_name, n_csvs_earliest, total_dates, min_date, max_date]
+      else
+        puts "%-15s | %-20s | %-12s | %-12s | %-12s" % [county_name, 0, 0, "N/A", "N/A"]
+      end
+    end
+    puts "-" * header.length
   end
 
   private
@@ -183,5 +214,5 @@ COUNTIES = {
   "Wagoner" => "wagoner",
   "Washington" => "washington"
 }
-scraper = JdiScraper.new(COUNTIES, "2025-12-01", Date.today.strftime("%Y-%m-%d"))
+scraper = JdiScraper.new(COUNTIES, "2025-12-18", Date.today.strftime("%Y-%m-%d"))
 scraper.run
