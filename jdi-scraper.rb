@@ -64,7 +64,6 @@ class JdiScraper
     login
     sleep 3
 
-    # Calculate total steps for the progress bar
     date_range = (@start_date..@end_date).to_a
     total_steps = @counties.size * date_range.size
 
@@ -79,8 +78,7 @@ class JdiScraper
         date_str = current_date.strftime("%Y-%m-%d")
         current_download_dir = OUTPUT_DIR.join(display_name.downcase, date_str)
 
-        if Dir.glob(current_download_dir.join("*.csv")).any?
-          # Use bar.log instead of puts to keep the UI clean
+        if Dir.glob(current_download_dir.join("*.csv")).any? # if that CSV is already present, skip
           bar.log " --- Skipping #{display_name} / #{date_str}"
           bar.increment
           next
@@ -103,17 +101,16 @@ class JdiScraper
           end
 
           @driver.execute_script("arguments[0].click();", download_btn)
-          handle_download(display_name, date_str, current_download_dir)
+          handle_download(display_name, date_str, current_download_dir, bar)
         rescue => e
           bar.log "Error on #{display_name} / #{date_str}: #{e.message}"
         ensure
-          bar.increment # Always increment so the bar finishes at 100%
+          bar.increment
         end
       end
     end
 
     bar.finish
-    # ... rest of your timing and summary code
   end
 
   def print_summary
@@ -148,7 +145,7 @@ class JdiScraper
 
   private
 
-  def handle_download(county, date, target_dir)
+  def handle_download(county, date, target_dir, progress_bar)
     # make sure the download is finished
     @wait.until do
       Dir.glob(target_dir.join("*.zip")).any? &&
@@ -156,8 +153,9 @@ class JdiScraper
     end
 
     zip_path = Pathname.glob(target_dir.join("*.zip")).first
-    return puts "Zip not found!!" unless zip_path
-    puts "Extracting contents from #{zip_path.basename}"
+    return progress_bar.log "Zip not found!!" unless zip_path
+    # puts "Extracting contents from #{zip_path.basename} "
+    progress_bar.log "Extracting contents from #{zip_path.basename}"
 
     Zip::File.open(zip_path) do |zip|
       zip.select { |e| e.file? && e.name.downcase.end_with?('.csv') }.each do |entry|
@@ -166,7 +164,7 @@ class JdiScraper
         new_filename = "#{original_base}-#{county.downcase}-#{date}.csv"
         dest_path = target_dir.join(new_filename)
 
-        puts "Extracting to: #{dest_path}"
+        progress_bar.log "Extracting to: #{dest_path}"
 
         File.open(dest_path, "wb") do |f|
           f.write(entry.get_input_stream.read)
@@ -217,5 +215,5 @@ COUNTIES = {
   "Wagoner" => "wagoner",
   "Washington" => "washington"
 }
-scraper = JdiScraper.new(COUNTIES, "2025-12-01", Date.today.strftime("%Y-%m-%d"))
+scraper = JdiScraper.new(COUNTIES, "2025-01-01", Date.today.strftime("%Y-%m-%d"))
 scraper.run
