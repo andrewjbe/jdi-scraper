@@ -4,6 +4,7 @@ require 'date'
 require 'dotenv/load'
 require 'zip'
 require 'pathname'
+require 'ruby-progressbar'
 
 class JdiScraper
   BASE_URL = "https://jaildatainitiative.org/roster"
@@ -55,35 +56,44 @@ class JdiScraper
   end
 
   def run
-    puts "======================================================\nBeginning new scrape\n======================================================"
+    puts "======================================================"
+    puts "Beginning new scrape"
+    puts "======================================================"
     start_time = Time.now
 
     login
     sleep 3
 
-    @counties.each do |display_name, url_slug|
-      (@start_date..@end_date).each do |current_date|
-        date_str = current_date.strftime("%Y-%m-%d")
+    # Calculate total steps for the progress bar
+    date_range = (@start_date..@end_date).to_a
+    total_steps = @counties.size * date_range.size
 
+    bar = ProgressBar.create(
+      title: "Scraping",
+      total: total_steps,
+      format: "%t: |%B| %p%% %e" # Title, Bar, Percentage, ETA
+    )
+
+    @counties.each do |display_name, url_slug|
+      date_range.each do |current_date|
+        date_str = current_date.strftime("%Y-%m-%d")
         current_download_dir = OUTPUT_DIR.join(display_name.downcase, date_str)
 
-        # skip if we already have the CSVs
         if Dir.glob(current_download_dir.join("*.csv")).any?
-          puts " --- Skipping #{display_name} / #{date_str}: Files already exist."
+          # Use bar.log instead of puts to keep the UI clean
+          bar.log " --- Skipping #{display_name} / #{date_str}"
+          bar.increment
           next
         end
 
         current_download_dir.mkpath
 
-        # set chrome download location
         @driver.execute_cdp("Browser.setDownloadBehavior",
                             behavior: "allow",
                             downloadPath: current_download_dir.to_s,
-                            eventsEnabled: true
-        )
+                            eventsEnabled: true)
 
         target_url = "#{BASE_URL}?state=OK&jail=#{display_name}&date=#{date_str}"
-        puts "\nChecking roster for county: #{display_name} and date: #{date_str}..."
         @driver.navigate.to target_url
 
         begin
@@ -92,25 +102,18 @@ class JdiScraper
             element if element.displayed? && element.enabled?
           end
 
-          # click the button regardless of if the loading UI is in the way
           @driver.execute_script("arguments[0].click();", download_btn)
-
           handle_download(display_name, date_str, current_download_dir)
-
-        rescue Selenium::WebDriver::Error::TimeoutError
-          puts "Error: No data found (Timeout looking for button)."
         rescue => e
-          puts "Error: #{e.message}"
+          bar.log "Error on #{display_name} / #{date_str}: #{e.message}"
+        ensure
+          bar.increment # Always increment so the bar finishes at 100%
         end
       end
     end
 
-    stop_time = Time.now
-    scrape_time = stop_time - start_time
-    pretty_time = Time.at(scrape_time).utc.strftime("%H hours, %M minutes, %S seconds")
-    puts "======================================================\nScrape Completed! Total time: #{pretty_time}\n======================================================"
-
-    print_summary
+    bar.finish
+    # ... rest of your timing and summary code
   end
 
   def print_summary
@@ -214,5 +217,5 @@ COUNTIES = {
   "Wagoner" => "wagoner",
   "Washington" => "washington"
 }
-scraper = JdiScraper.new(COUNTIES, "2025-12-18", Date.today.strftime("%Y-%m-%d"))
+scraper = JdiScraper.new(COUNTIES, "2025-12-01", Date.today.strftime("%Y-%m-%d"))
 scraper.run

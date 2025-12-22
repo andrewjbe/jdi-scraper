@@ -18,6 +18,7 @@ GEM
       racc (~> 1.4)
     racc (1.8.1)
     rexml (3.4.4)
+    ruby-progressbar (1.13.0)
     rubyzip (3.2.2)
     selenium-webdriver (4.39.0)
       base64 (~> 0.2)
@@ -35,6 +36,7 @@ DEPENDENCIES
   fileutils (~> 1.8)
   httparty (~> 0.23.2)
   nokogiri (~> 1.18)
+  ruby-progressbar (~> 1.13)
   selenium-webdriver (~> 4.39)
 
 BUNDLED WITH
