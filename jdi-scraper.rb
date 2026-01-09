@@ -215,5 +215,6 @@ COUNTIES = {
   "Wagoner" => "wagoner",
   "Washington" => "washington"
 }
-scraper = JdiScraper.new(COUNTIES, "2025-01-01", Date.today.strftime("%Y-%m-%d"))
+scraper = JdiScraper.new(COUNTIES, "2024-12-01", Date.today.strftime("%Y-%m-%d"))
 scraper.run
+# scraper.print_summary
